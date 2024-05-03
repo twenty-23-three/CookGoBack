@@ -1,0 +1,25 @@
+body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .image {
+        width: 500px;
+        height: 500px;
+        background-size: contain;
+        background-image: url("placeholder.png");
+        display: flex;
+        justify-content: center;
+        opacity: 1;
+    }
+
+    .text {
+        height: 75px;
+        margin: 0;
+        margin-top: 75px;
+        font-size: 75px;
+        background: -webkit-linear-gradient(#ff00f2, #0099ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+}
