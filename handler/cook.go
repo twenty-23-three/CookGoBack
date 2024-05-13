@@ -9,12 +9,85 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type Cook struct {
 	Repo *users.SqlRepo
+}
+
+func (o *Cook) AddComments(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("addcomments")
+	var body struct {
+		IdRecipe  uint   `json:"id_recipe"`
+		ImageUser string `json:"image_user"`
+		NameUser  string `json:"name_user"`
+		Comment   string `json:"comment"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	now := time.Now().UTC()
+
+	comments := model.Comments{
+		IdRecipe:  body.IdRecipe,
+		ImageUser: body.ImageUser,
+		NameUser:  body.NameUser,
+		Comment:   body.Comment,
+		Date:      &now,
+	}
+
+	err := o.Repo.InsertComment(comments)
+	if err != nil {
+		fmt.Println("failed to insert", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res, err := json.Marshal(comments)
+	if err != nil {
+		fmt.Println("failed to marshal", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Write(res)
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (o *Cook) CommentsList(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println("ListRecipeByUser")
+	idParam := chi.URLParam(r, "id")
+
+	const base = 10
+	const bitSize = 64
+	IdRecipe, err := strconv.ParseUint(idParam, base, bitSize)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	res, err := o.Repo.CommentsByID(uint(IdRecipe))
+	if err != nil {
+		fmt.Println("failder to find all recipe")
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var response struct {
+		Comments []model.Comments `json:"comments"`
+	}
+	response.Comments = res
+
+	data, err := json.Marshal(response)
+	if err != nil {
+		fmt.Println("failed Marshal recipe:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
 }
 
 func (o *Cook) CheckEmail(w http.ResponseWriter, r *http.Request) {
@@ -98,19 +171,15 @@ func (o *Cook) UploadImageUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Указание пути для сохранения файла в папке "uploads"
 	uploadPath := "./assets/images/"
-	os.MkdirAll(uploadPath, os.ModePerm) // Создаем папку, если её нет
+	os.MkdirAll(uploadPath, os.ModePerm)
 
-	// Создание нового файла на сервере
 	f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		fmt.Println("Ошибка при создании файла:", err)
 		return
 	}
 	defer f.Close()
-
-	// Копирование содержимого файла в созданный файл на сервере
 	_, err = io.Copy(f, file)
 	if err != nil {
 		fmt.Println("Ошибка при копировании файла:", err)
@@ -128,11 +197,9 @@ func (o *Cook) UploadImageRecipes(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// Указание пути для сохранения файла в папке "uploads"
 	uploadPath := "./assets/recipes/"
-	os.MkdirAll(uploadPath, os.ModePerm) // Создаем папку, если её нет
+	os.MkdirAll(uploadPath, os.ModePerm)
 
-	// Создание нового файла на сервере
 	f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		http.Error(w, "Ошибка при создании файла", http.StatusInternalServerError)
@@ -140,7 +207,6 @@ func (o *Cook) UploadImageRecipes(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	// Копирование содержимого файла в созданный файл на сервере
 	_, err = io.Copy(f, file)
 	if err != nil {
 		http.Error(w, "Ошибка при копировании файла", http.StatusInternalServerError)
@@ -525,6 +591,35 @@ func (o *Cook) RecipeByID(w http.ResponseWriter, r *http.Request) {
 	recipe, err := o.Repo.RecipeById(uint(RecipeID))
 	if err != nil {
 		fmt.Println("failed to find recipe by id ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(recipe); err != nil {
+		fmt.Println("failed to marshal:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+func (o *Cook) RecipeByCountComments(w http.ResponseWriter, r *http.Request) {
+	array, err := o.Repo.RecipeByCountComments()
+	if err != nil {
+		fmt.Println("failed to find recipe by count of comments:", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if len(array) == 0 {
+		fmt.Println("no recipes found")
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	id_recipe := array[0].IdRecipe
+
+	recipe, err := o.Repo.RecipeById(uint(id_recipe))
+	if err != nil {
+		fmt.Println("failed to find recipe by id:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

@@ -52,7 +52,6 @@ func (a *App) Start(ctx context.Context) error {
             category TEXT,
             tag TEXT,
 			video TEXT);
-			
 
 			
          CREATE TABLE IF NOT EXISTS ` + "`step`" + ` (
@@ -63,6 +62,15 @@ func (a *App) Start(ctx context.Context) error {
             product_id INTEGER PRIMARY KEY,
             name TEXT,
             weight INTEGER);
+		
+			CREATE TABLE IF NOT EXISTS ` + "`comments`" + ` (
+			number INTEGER PRIMARY KEY,
+			id_recipe INTEGER,
+			image_user TEXT,
+			name_user TEXT,
+			comment TEXT,
+			date DATETIME);
+	
     `)
 	if err != nil {
 		return fmt.Errorf("failed to create tables: %w", err)

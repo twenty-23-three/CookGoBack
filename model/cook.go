@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 )
 
 type User struct {
@@ -33,6 +34,15 @@ type Product struct {
 type Step struct {
 	StepNumber uint   `json:"step_number"`
 	Step       string `json:"step"`
+}
+
+type Comments struct {
+	Number    uint       `json:"number"`
+	IdRecipe  uint       `json:"id_recipe"`
+	ImageUser string     `json:"image_user"`
+	NameUser  string     `json:"name_user"`
+	Comment   string     `json:"comment"`
+	Date      *time.Time `json:"date"`
 }
 
 func (o *Recipe) MarshalDescription() string {

@@ -18,6 +18,79 @@ func RandomImagePath() string {
 	return fmt.Sprintf("http://localhost:3000/assets/images/%v.png", img)
 }
 
+func (r *SqlRepo) InsertComment(comments model.Comments) error {
+	statement, err := r.DB.Prepare(`INSERT INTO ` + "`comments`" + ` (
+		id_recipe,
+		image_user,
+		name_user,
+		comment,
+		date ) VALUES (?, ?, ?, ?, ?)`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare insert user: %w", err)
+	}
+	_, err = statement.Exec(comments.IdRecipe, comments.ImageUser, comments.NameUser, comments.Comment, comments.Date)
+	if err != nil {
+		return fmt.Errorf("failed to insert user: %w", err)
+
+	}
+
+	return nil
+}
+func (r *SqlRepo) RecipeByCountComments() ([]model.Comments, error) {
+	array := []model.Comments{}
+
+	rows, err := r.DB.Query(`
+        SELECT number, id_recipe, image_user, name_user, comment, date
+        FROM comments
+        GROUP BY id_recipe
+        ORDER BY COUNT(*) DESC
+        LIMIT 1;
+    `)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare RecipeByCountComments recipe: %w", err)
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		model_comments := model.Comments{}
+
+		err := rows.Scan(
+			&model_comments.Number,
+			&model_comments.IdRecipe,
+			&model_comments.ImageUser,
+			&model_comments.NameUser,
+			&model_comments.Comment,
+			&model_comments.Date,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		array = append(array, model_comments)
+	}
+
+	return array, nil
+}
+
+func (r *SqlRepo) CommentsByID(recipe_id uint) ([]model.Comments, error) {
+
+	array := []model.Comments{}
+
+	rows, err := r.DB.Query(`SELECT * FROM `+"`comments`"+`WHERE id_recipe = ? ORDER BY date`, recipe_id)
+	if err != nil {
+		return []model.Comments{}, fmt.Errorf("failed to prepare CommentsByID recipe: %w", err)
+	}
+
+	for rows.Next() {
+		model_comments := model.Comments{}
+
+		rows.Scan(&model_comments.Number, &model_comments.IdRecipe, &model_comments.ImageUser, &model_comments.NameUser, &model_comments.Comment, &model_comments.Date)
+		array = append(array, model_comments)
+	}
+	return array, nil
+}
+
 func (r *SqlRepo) Insert(user model.User) error {
 	statement, err := r.DB.Prepare(`INSERT INTO ` + "`users`" + ` (
 		image,

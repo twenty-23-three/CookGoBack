@@ -54,7 +54,10 @@ func (a *App) loadRecipeRoutes(router chi.Router) {
 	router.Post("/Category", recipeHandler.FindByCategory)
 	router.Post("/Tag", recipeHandler.FindByTag)
 	router.Get("/{id}", recipeHandler.RecipeByID)
-	router.Post("/{id}", recipeHandler.ListRecipeByUser)
+	router.Post("/user{id}", recipeHandler.ListRecipeByUser)
 	router.Post("/category", recipeHandler.ListRecipeByCategory)
 	router.Post("/tag", recipeHandler.ListRecipeByTag)
+	router.Post("/addcomments", recipeHandler.AddComments)
+	router.Post("/comments{id}", recipeHandler.CommentsList)
+	router.Post("/popularrecipe", recipeHandler.RecipeByCountComments)
 }
