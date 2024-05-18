@@ -25,6 +25,7 @@ func (o *Cook) AddComments(w http.ResponseWriter, r *http.Request) {
 		ImageUser string `json:"image_user"`
 		NameUser  string `json:"name_user"`
 		Comment   string `json:"comment"`
+		Image     string `json:"image"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -38,6 +39,7 @@ func (o *Cook) AddComments(w http.ResponseWriter, r *http.Request) {
 		NameUser:  body.NameUser,
 		Comment:   body.Comment,
 		Date:      &now,
+		Image:     body.Image,
 	}
 
 	err := o.Repo.InsertComment(comments)
@@ -161,6 +163,31 @@ func (o *Cook) UpdateByID(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+func (o *Cook) UploadCommImage(w http.ResponseWriter, r *http.Request) {
+	file, handler, err := r.FormFile("file")
+	if err != nil {
+		fmt.Println("Ошибка при получении файла:", err)
+		return
+	}
+	defer file.Close()
+
+	uploadPath := "./assets/commimg/"
+	os.MkdirAll(uploadPath, os.ModePerm)
+
+	f, err := os.OpenFile(uploadPath+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		fmt.Println("Ошибка при создании файла:", err)
+		return
+	}
+	defer f.Close()
+	_, err = io.Copy(f, file)
+	if err != nil {
+		fmt.Println("Ошибка при копировании файла:", err)
+		return
+	}
+
+	fmt.Println("Файл успешно загружен на сервер.")
 }
 
 func (o *Cook) UploadImageUser(w http.ResponseWriter, r *http.Request) {
@@ -616,6 +643,7 @@ func (o *Cook) RecipeByCountComments(w http.ResponseWriter, r *http.Request) {
 	}
 
 	id_recipe := array[0].IdRecipe
+	fmt.Println(id_recipe)
 
 	recipe, err := o.Repo.RecipeById(uint(id_recipe))
 	if err != nil {

@@ -60,4 +60,5 @@ func (a *App) loadRecipeRoutes(router chi.Router) {
 	router.Post("/addcomments", recipeHandler.AddComments)
 	router.Post("/comments{id}", recipeHandler.CommentsList)
 	router.Post("/popularrecipe", recipeHandler.RecipeByCountComments)
+	router.Post("/uploadcomm", recipeHandler.UploadCommImage)
 }

@@ -69,7 +69,8 @@ func (a *App) Start(ctx context.Context) error {
 			image_user TEXT,
 			name_user TEXT,
 			comment TEXT,
-			date DATETIME);
+			date DATETIME,
+			image TEXT);
 	
     `)
 	if err != nil {

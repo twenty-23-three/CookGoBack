@@ -4,44 +4,17 @@ import (
 	"cookvs/model"
 	"database/sql"
 	"fmt"
-	"math/rand"
 )
 
 type SqlRepo struct {
 	DB *sql.DB
 }
 
-func RandomImagePath() string {
-	min := 0
-	max := 5
-	img := rand.Intn(max-min) + min
-	return fmt.Sprintf("http://localhost:3000/assets/images/%v.png", img)
-}
-
-func (r *SqlRepo) InsertComment(comments model.Comments) error {
-	statement, err := r.DB.Prepare(`INSERT INTO ` + "`comments`" + ` (
-		id_recipe,
-		image_user,
-		name_user,
-		comment,
-		date ) VALUES (?, ?, ?, ?, ?)`)
-	if err != nil {
-		return fmt.Errorf("failed to prepare insert user: %w", err)
-	}
-	_, err = statement.Exec(comments.IdRecipe, comments.ImageUser, comments.NameUser, comments.Comment, comments.Date)
-	if err != nil {
-		return fmt.Errorf("failed to insert user: %w", err)
-
-	}
-
-	return nil
-}
 func (r *SqlRepo) RecipeByCountComments() ([]model.Comments, error) {
 	array := []model.Comments{}
 
 	rows, err := r.DB.Query(`
-        SELECT number, id_recipe, image_user, name_user, comment, date
-        FROM comments
+        SELECT number, id_recipe, image_user, name_user, comment, date, image FROM comments
         GROUP BY id_recipe
         ORDER BY COUNT(*) DESC
         LIMIT 1;
@@ -62,6 +35,7 @@ func (r *SqlRepo) RecipeByCountComments() ([]model.Comments, error) {
 			&model_comments.NameUser,
 			&model_comments.Comment,
 			&model_comments.Date,
+			&model_comments.Image,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
@@ -71,6 +45,26 @@ func (r *SqlRepo) RecipeByCountComments() ([]model.Comments, error) {
 	}
 
 	return array, nil
+}
+
+func (r *SqlRepo) InsertComment(comments model.Comments) error {
+	statement, err := r.DB.Prepare(`INSERT INTO ` + "`comments`" + ` (
+		id_recipe,
+		image_user,
+		name_user,
+		comment,
+		date,
+		image  ) VALUES (?, ?, ?, ?, ?, ?)`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare insert user: %w", err)
+	}
+	_, err = statement.Exec(comments.IdRecipe, comments.ImageUser, comments.NameUser, comments.Comment, comments.Date, comments.Image)
+	if err != nil {
+		return fmt.Errorf("failed to insert user: %w", err)
+
+	}
+
+	return nil
 }
 
 func (r *SqlRepo) CommentsByID(recipe_id uint) ([]model.Comments, error) {
@@ -85,7 +79,8 @@ func (r *SqlRepo) CommentsByID(recipe_id uint) ([]model.Comments, error) {
 	for rows.Next() {
 		model_comments := model.Comments{}
 
-		rows.Scan(&model_comments.Number, &model_comments.IdRecipe, &model_comments.ImageUser, &model_comments.NameUser, &model_comments.Comment, &model_comments.Date)
+		rows.Scan(&model_comments.Number, &model_comments.IdRecipe, &model_comments.ImageUser, &model_comments.NameUser,
+			&model_comments.Comment, &model_comments.Date, &model_comments.Image)
 		array = append(array, model_comments)
 	}
 	return array, nil

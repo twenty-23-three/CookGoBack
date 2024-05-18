@@ -43,6 +43,7 @@ type Comments struct {
 	NameUser  string     `json:"name_user"`
 	Comment   string     `json:"comment"`
 	Date      *time.Time `json:"date"`
+	Image     string     `json:"image"`
 }
 
 func (o *Recipe) MarshalDescription() string {
